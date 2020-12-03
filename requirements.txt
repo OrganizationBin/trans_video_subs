@@ -1,0 +1,6 @@
+google-cloud
+google-cloud-speech>=1.2.0
+google-cloud-translate>=2.0.0
+srt>=3.0.0
+google-cloud-storage>=1.33.0
+ffmpy
