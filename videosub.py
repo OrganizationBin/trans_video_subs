@@ -151,11 +151,15 @@ def process_video(filename):
     clean_local(out_file)
 
 
-def create_bucket(buckets):
+def create_bucket(buckets, bucket_in):
+    # Create bucket in the same location as bucket_in
+    r = storage_client.get_bucket(bucket_in)
+    location = r.location
+
     for b in buckets:
         bucket = storage_client.bucket(b)
         if not bucket.exists():
-            storage_client.create_bucket(bucket)
+            storage_client.create_bucket(bucket, location=location)
 
 
 def clean_bucket(bucket, prefix):
@@ -175,7 +179,7 @@ def clean_local(out_file):
 
 def main():
     # Create tmp and output bucket
-    create_bucket([bucket_tmp, bucket_out])
+    create_bucket([bucket_tmp, bucket_out], bucket_in)
 
     # list gs and Download video from gs to local
     file_list = storage_client.list_blobs(bucket_in)
