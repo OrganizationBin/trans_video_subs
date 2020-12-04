@@ -40,7 +40,7 @@ The other options use default. It means you use the default compute service acco
         --merge_sub_to_video True \
         --parallel_threads 3
     ```
-5. Subtitles files and output video files will be my-video-bucket-out
+5. Translated subtitles and output video files will be in the GCS Bucket: my-video-bucket-out
 
 ## Detail Guide
 1. Upload video files to GCS(Google Cloud Storage)  
