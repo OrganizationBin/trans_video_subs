@@ -17,7 +17,32 @@ This tool generates translated subtitles for video with ONE COMMAND, and optiona
 * The best feature is that the processing is in BATCH and in PARALLEL.  
 最棒的是，支持批量并行处理
 
-## How to use
+## Quick Guide
+1. Create a Bucket, e.g. my-video-bucket.  
+Upload some video files to GCS(Google Cloud Storage) Bucket, e.g. mp4, avi and etc.
+2. Create VM at the same region as GCS Bucket, API scope for all.  
+The other options use default. It means you use the default compute service account for the VM with project Editor permission.
+3. Run these on the VM you created:
+    ```
+    sudo apt update -y
+    sudo apt install git python3-pip ffmpeg fonts-wqy-zenhei -y
+    git clone https://github.com/hawkey999/trans_video_subs.git
+    cd trans_video_subs
+    pip3 install -r requirements.txt --user
+    ```
+4. Then run:
+    ```
+    python3 videosub.py --bucket my-video-bucket \
+        --video_src_language en-US \
+        --translate_src_language en \
+        --translate_des_language zh \
+        --translate_location us-central1 \
+        --merge_sub_to_video True \
+        --parallel_threads 3
+    ```
+5. Subtitles files and output video files will be my-video-bucket-out
+
+## Detail Guide
 1. Upload video files to GCS(Google Cloud Storage)  
 上传视频到对象存储 
 * All video files should be upload to GCS Bucket without sub-folder. The tool doesn't support sub-folder yet, and will be added in coming release.  
