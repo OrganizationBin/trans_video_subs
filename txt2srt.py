@@ -35,3 +35,4 @@ def txt2srt(orgfile, langfile, lang, out_file):
     subs = load_srt(orgfile)
     lang_subs = update_srt(langfile, subs)
     write_srt(lang, lang_subs, out_file)
+    return

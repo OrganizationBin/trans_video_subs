@@ -2,6 +2,7 @@ from google.cloud import storage
 from ffmpy import FFmpeg, FFprobe
 import json
 import os
+import re
 from concurrent import futures
 from subprocess import PIPE
 from speech2txt import speech2txt
@@ -9,11 +10,11 @@ from translate import batch_translate_text
 from txt2srt import txt2srt
 import argparse
 
-support_format = [".mov", ".mp4", ".mkv", ".avi"]
+support_format = [".mov", ".mp4", ".mkv", ".avi", ".webm"]
 storage_client = storage.Client()
 
 parser = argparse.ArgumentParser()
-parser.add_argument("--bucket", type=str, default="my-video-en")
+parser.add_argument("--bucket", type=str, default="hzb-video-en")
 parser.add_argument("--video_src_language", type=str, default="en-US")
 # Speech to text language code: https://cloud.google.com/speech-to-text/docs/languages
 parser.add_argument("--translate_src_language", type=str, default="en")
@@ -37,24 +38,30 @@ parallel_threads = args.parallel_threads  # Concurrent processing threads
 
 
 def audio_to_file(filename, filename_audio):
-    if not os.path.exists(filename_audio):
-        ff = FFmpeg(inputs={filename: None},
-                    outputs={filename_audio: '-vn -y -loglevel warning'}
-                    )
-        print(ff.cmd)
-        ff.run()
+    try:
+        if not os.path.exists(filename_audio):
+            ff = FFmpeg(inputs={filename: None},
+                        outputs={filename_audio: '-vn -y -loglevel warning'}
+                        )
+            print(ff.cmd)
+            ff.run()
+    except Exception as e:
+        print(f"ERROR while audio_to_file {filename}: ", e)
 
 
 def get_audio_info(filename_audio):
-    fr = FFprobe(global_options='-of json -show_streams -select_streams a',
-                 inputs={filename_audio: None},
-                 )
-    print(fr.cmd)
-    res = fr.run(stdout=PIPE, stderr=PIPE)
-    stream_detail = json.loads(res[0]).get('streams')[0]
-    sample_rate = int(stream_detail['sample_rate'])
-    channels = int(stream_detail['channels'])
-    print(filename_audio, 'sample_rate:', sample_rate, 'channels: ', channels)
+    try:
+        fr = FFprobe(global_options='-of json -show_streams -select_streams a',
+                     inputs={filename_audio: None},
+                     )
+        print(fr.cmd)
+        res = fr.run(stdout=PIPE, stderr=PIPE)
+        stream_detail = json.loads(res[0]).get('streams')[0]
+        sample_rate = int(stream_detail['sample_rate'])
+        channels = int(stream_detail['channels'])
+        print(filename_audio, 'sample_rate:', sample_rate, 'channels: ', channels)
+    except Exception as e:
+        print(f"ERROR while get_audio_info {filename_audio}: ", e)
     return sample_rate, channels
 
 
@@ -72,7 +79,7 @@ def download(bucket, localfile, bucketfile):
 
 
 def process_video(filename):
-    print("Start processing...", filename)
+    print("! Start processing...", filename)
     out_file = os.path.splitext(filename)[0]  # Pre-fix of the file
 
     # Download video from gs://in
@@ -136,19 +143,24 @@ def process_video(filename):
     upload(bucket_out, out_srt, out_srt)
 
     if merge_sub_to_video:
-        out_video = f"{out_file}.{translate_des_code}{os.path.splitext(filename)[1]}"
-        # ffmpeg convert video to video with hard-subtitles
-        ff = FFmpeg(inputs={filename: None},
-                    outputs={out_video: f"-y -vf 'subtitles={out_file}.{translate_des_code}.srt' -loglevel warning"}
-                    )
-        print(ff.cmd)
-        ff.run()
+        try:
+            out_video = f"{out_file}.{translate_des_code}{os.path.splitext(filename)[1]}"
+            # ffmpeg convert video to video with hard-subtitles
+            ff = FFmpeg(inputs={filename: None},
+                        outputs={out_video: f"-y -vf 'subtitles={out_file}.{translate_des_code}.srt'"}
+                        )
+            print(ff.cmd)
+            ff.run()
 
-        # Upload video to gs://output
-        upload(bucket_out, out_video, out_video)
+            # Upload video to gs://output
+            upload(bucket_out, out_video, out_video)
+            print(f"Uploaded video with sub to {out_video}")
+        except Exception as e:
+            print(f"ERROR while merge_sub_to_video {out_srt}: ", e)
 
     # Delete all local temp files
     clean_local(out_file)
+    return
 
 
 def create_bucket(buckets, bucket_in):
@@ -177,23 +189,74 @@ def clean_local(out_file):
             os.remove(f)
 
 
+def make_list(file_inter):
+    m_list = []
+    for f in file_inter:
+        m_list.append(f.name)
+    return m_list
+
+
+def compare_bucket(bucket_in, bucket_out, lang):
+    print(f"Comparing input and output bucket")
+    source_inter = storage_client.list_blobs(bucket_in)
+    target_inter = storage_client.list_blobs(bucket_out)
+
+    src_bucket = make_list(source_inter)
+    des_bucket = make_list(target_inter)
+
+    delta_list = []
+    for s in src_bucket:
+        prefix = os.path.splitext(s)[0]
+        surfix = os.path.splitext(s)[1]
+        full = prefix + "." + lang + surfix
+        if full not in des_bucket:
+            delta_list.append(s)
+    if len(delta_list) != 0:
+        print("There files are not finished output. Please check:", delta_list)
+    else:
+        print("Compare result: Match! All files output!")
+    return
+
+
+def bucket_file_name(bucket):
+    list = storage_client.list_blobs(bucket)
+    b = storage_client.bucket(bucket)
+
+    file_list = []
+    rstr = r"[\/\\\:\*\?\"\<\>\|\[\]\'\ \@]"  # '/ \ : * ? " < > | [ ] ' @ '
+    for f in list:
+        filename = f.name
+        # Change filename if match special character
+        if re.search(rstr, filename):
+            filename_old = filename
+            filename = re.sub(rstr, "_", filename)
+            blob = b.blob(filename_old)
+            b.rename_blob(blob, filename)
+
+        file_list.append(filename)
+
+    return file_list
+
+
 def main():
     # Create tmp and output bucket
     create_bucket([bucket_tmp, bucket_out], bucket_in)
 
-    # list gs and Download video from gs to local
-    file_list = storage_client.list_blobs(bucket_in)
+    # List files on bucket and change special character
+    file_list = bucket_file_name(bucket_in)
 
     # Pallaral process
     with futures.ThreadPoolExecutor(max_workers=parallel_threads) as pool:
-        for blob in file_list:
-            filename = blob.name
+        for filename in file_list:
             if os.path.splitext(filename)[1] in support_format:
                 pool.submit(process_video, filename)
             else:
                 print("Not support format, skip...", filename)
 
-    print(f"/n Finished all subtitiles and videos output to gs://{bucket_out}")
+    print(f"! Finished all subtitiles and videos output to gs://{bucket_out}")
+
+    # Compare source bucket and output bucket
+    compare_bucket(bucket_in, bucket_out, translate_des_code)
 
 
 if __name__ == '__main__':

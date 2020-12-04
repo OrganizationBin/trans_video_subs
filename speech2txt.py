@@ -1,5 +1,6 @@
 import srt
 import time
+import datetime
 from google.cloud import speech
 
 
@@ -15,11 +16,11 @@ def long_running_recognize(sample_rate, channels, language_code, storage_uri):
       language_code of audio, e.g. en-US
         # Speech to text language code: https://cloud.google.com/speech-to-text/docs/languages
     """
-
-    print("Transcribing {} ...".format(storage_uri))
+    start_time = datetime.datetime.now()
+    print("Transcribing... {} ".format(storage_uri))
     client = speech.SpeechClient()
 
-    # Encoding of audio data sent, recommend use loseless codec. Here should match ffmpeg output codec
+    # Encoding of audio data sent, recommended to use loseless codec. Here should match ffmpeg output codec
     encoding = speech.RecognitionConfig.AudioEncoding.FLAC
     # Supported encoding: https://cloud.google.com/speech-to-text/docs/encoding#audio-encodings
 
@@ -34,20 +35,24 @@ def long_running_recognize(sample_rate, channels, language_code, storage_uri):
     }
     audio = {"uri": storage_uri}
 
-    operation = client.long_running_recognize(
-        request={
-            "config": config,
-            "audio": audio,
-        }
-    )
-    response = operation.result(timeout=3600)
+    try:
+        operation = client.long_running_recognize(
+            request={
+                "config": config,
+                "audio": audio,
+            }
+        )
+        response = operation.result(timeout=3600)
 
-    subs = []
+        subs = []
 
-    for result in response.results:
-        # First alternative is the most probable result
-        subs = break_sentences(subs, result.alternatives[0])
-
+        for result in response.results:
+            # First alternative is the most probable result
+            subs = break_sentences(subs, result.alternatives[0])
+    except Exception as e:
+        print(f"ERROR while transcribing {storage_uri}: ", e)
+    spent_time = str(datetime.datetime.now() - start_time)
+    print(f"Transcrbed with Time {spent_time}, {storage_uri}")
     return subs
 
 
@@ -105,7 +110,6 @@ def write_txt(out_file, language_code, subs):
     with open(txt_file, 'w') as f:
         for s in subs:
             f.write(s.content.strip() + "\n")
-
     return
 
 
@@ -113,4 +117,5 @@ def speech2txt(sample_rate, channels, language_code, storage_uri, out_file):
     subs = long_running_recognize(sample_rate, channels, language_code, storage_uri)
     write_srt(out_file, language_code, subs)
     write_txt(out_file, language_code, subs)
+    return
 
