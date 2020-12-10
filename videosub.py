@@ -20,7 +20,7 @@ parser.add_argument("--video_src_language", type=str, default="en-US")
 parser.add_argument("--translate_src_language", type=str, default="en")
 parser.add_argument("--translate_des_language", type=str, default="zh")
 # Translate language code: https://cloud.google.com/translate/docs/languages
-parser.add_argument("--translate_location", type=str, default="us-central1")
+parser.add_argument("--translate_location", type=str, default="us-central1")  # Because we use batch translate, only support us-central1
 parser.add_argument("--merge_sub_to_video", type=bool, default=True)
 parser.add_argument("--parallel_threads", type=int, default=1)
 args = parser.parse_args()

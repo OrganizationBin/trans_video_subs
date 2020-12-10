@@ -20,8 +20,8 @@ This tool generates translated subtitles for video with ONE COMMAND, and optiona
 ## Quick Guide
 1. Create a Bucket, e.g. my-video-bucket.  
 Upload some video files to GCS(Google Cloud Storage) Bucket, e.g. mp4, avi and etc.
-2. Create VM at the same region as GCS Bucket, API scope for all.  
-The other options use default. It means you use the default compute service account for the VM with project Editor permission.
+2. Create VM at the same region as GCS Bucket. Set Cloud API Access Scope for all API.  
+Use the default compute service account for the VM as project Editor permission.
 3. Run these on the VM you created:
     ```
     sudo apt update -y
@@ -36,7 +36,6 @@ The other options use default. It means you use the default compute service acco
         --video_src_language en-US \
         --translate_src_language en \
         --translate_des_language zh \
-        --translate_location us-central1 \
         --merge_sub_to_video True \
         --parallel_threads 3
     ```
@@ -53,7 +52,9 @@ ___
 2. Prepare tool execution environment  
 准备程序运行环境
 * Confirm IAM Service Account for the Server to execute tool with permissions of GCS Read/Write，Speech-to-Text API, Translation API. Or just use default compute service account with Edit permission of the project.     
-确认执行程序所需的IAM服务账号，需要权限至少包括：GCS读写，Speech-to-Text API, Translation API。或使用默认的 compute 服务账号，自带有整个项目的 Edit 权限。
+确认执行程序所需的IAM服务账号，需要权限至少包括：GCS读写，Speech-to-Text API, Translation API。或使用默认的 compute 服务账号，自带有整个项目的 Edit 权限。  
+![Service Account List](./img/02.png)
+![Service Account Setting](./img/03.png)
 * Create VM Instance on Google Cloud.  
 在谷歌云上启动虚机服务器。  
     - Region: Select VM running on the same region as GCS bucket with your video  
@@ -62,6 +63,7 @@ ___
     选择你上面确认的服务账号  
     - Access scopes: Allow full access to all Cloud APIs  
     允许访问全部API。事实上有Service Account限制权限了，这个Access Scope是旧功能，可以全放开。
+![API Access Scope](./img/01.png)
     - Disk size: Shoud 2.2x large as single video. If process in parallel N video, disk size 2.2 x N x SingleMaxVideoFileSize
     硬盘大小要至少比单个视频的2.2倍要大，如果是并行处理N个视频，则需要硬盘空间为 2.2 x N x 单个最大视频文件大小。例如视频文件每个都是1GB，你设置了并行处理3个视频，则需要硬盘6.6GB以上。
 
@@ -89,7 +91,6 @@ ___
         --video_src_language [String] \
         --translate_src_language [String] \
         --translate_des_language [String] \
-        --translate_location [String] \
         --merge_sub_to_video [Bool] \
         --parallel_threads [Int]
     ```
@@ -114,7 +115,6 @@ ___
         --video_src_language en-US \
         --translate_src_language en \
         --translate_des_language zh \
-        --translate_location us-central1 \
         --merge_sub_to_video True \
         --parallel_threads 3
     ```
