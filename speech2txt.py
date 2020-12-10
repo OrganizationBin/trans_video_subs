@@ -24,17 +24,27 @@ def long_running_recognize(sample_rate, channels, language_code, storage_uri):
     encoding = speech.RecognitionConfig.AudioEncoding.FLAC
     # Supported encoding: https://cloud.google.com/speech-to-text/docs/encoding#audio-encodings
 
-    config = {
-        "enable_word_time_offsets": True,
-        "enable_automatic_punctuation": True,
-        "sample_rate_hertz": sample_rate,
-        "language_code": language_code,
-        "encoding": encoding,
-        "audio_channel_count": channels,
-        # "use_enhanced": True,
-        # "model": "video"
-        # TODO : Enable video model when it support more language
-    }
+    # TODO : Video model now only support en-US
+    if language_code == 'en-US':
+        config = {
+            "enable_word_time_offsets": True,
+            "enable_automatic_punctuation": True,
+            "sample_rate_hertz": sample_rate,
+            "language_code": language_code,
+            "encoding": encoding,
+            "audio_channel_count": channels,
+            "use_enhanced": True,
+            "model": "video"
+        }
+    else:
+        config = {
+            "enable_word_time_offsets": True,
+            "enable_automatic_punctuation": True,
+            "sample_rate_hertz": sample_rate,
+            "language_code": language_code,
+            "encoding": encoding,
+            "audio_channel_count": channels
+        }
     audio = {"uri": storage_uri}
 
     try:
