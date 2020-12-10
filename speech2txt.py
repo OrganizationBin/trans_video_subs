@@ -31,8 +31,8 @@ def long_running_recognize(sample_rate, channels, language_code, storage_uri):
         "language_code": language_code,
         "encoding": encoding,
         "audio_channel_count": channels,
-        "use_enhanced": True,
-        "model": "video"
+        # "use_enhanced": True,
+        # "model": "video"
         # TODO : Enable video model when it support more language
     }
     audio = {"uri": storage_uri}
