@@ -82,12 +82,13 @@ def break_sentences(subs, alternative, max_chars=40):
             start_ms = int(w.start_time.microseconds / 1000)
             start = start_hhmmss + "," + str(start_ms)
 
-        charcount += len(w.word)
-        content += " " + w.word.strip()
+        wd = w.word.replace("|", "")  # delete "|"
+        charcount += len(wd)
+        content += " " + wd.strip()
 
-        if ("." in w.word or "!" in w.word or "?" in w.word or
+        if ("." in wd or "!" in wd or "?" in wd or
                 charcount > max_chars or
-                ("," in w.word and not firstword)):
+                ("," in wd and not firstword)):
             # break sentence at: . ! ? or line length exceeded
             # also break if , and not first word
             end_hhmmss = time.strftime('%H:%M:%S', time.gmtime(
