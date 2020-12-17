@@ -15,16 +15,28 @@ storage_client = storage.Client()
 
 parser = argparse.ArgumentParser()
 parser.add_argument("--bucket", type=str, default="hzb-video-en")
+
 parser.add_argument("--video_src_language", type=str, default="en-US")
 # Speech to text language code: https://cloud.google.com/speech-to-text/docs/languages
+
 parser.add_argument("--translate_src_language", type=str, default="en")
 parser.add_argument("--translate_des_language", type=str, default="zh")
 # Translate language code: https://cloud.google.com/translate/docs/languages
-parser.add_argument("--translate_location", type=str, default="us-central1")  # Because we use batch translate, only support us-central1
-parser.add_argument("--merge_sub_to_video", type=bool, default=True)
-parser.add_argument("--parallel_threads", type=int, default=1)
-args = parser.parse_args()
 
+parser.add_argument("--translate_location", type=str, default="us-central1")
+# Because we use batch translate, only support us-central1
+
+parser.add_argument("--merge_sub_to_video", type=bool, default=True)
+# Hard-encode the srt subtitle file into video
+
+parser.add_argument("--parallel_threads", type=int, default=1)
+# Processing videos in parallel
+
+parser.add_argument("--local_file", type=str, default="NONE")
+# If set local_file (only one filename without path), it will not list the bucket of the source
+# You still need to set a fake bucket name with --bucket para, it is for creating tmp and output bucket
+
+args = parser.parse_args()
 bucket_in = args.bucket
 bucket_tmp = bucket_in + "-tmp"
 bucket_out = bucket_in + "-out"
@@ -35,6 +47,7 @@ project_id = storage_client.project
 translate_location = args.translate_location  # Traslate API running region
 merge_sub_to_video = args.merge_sub_to_video  # Merge subtitle into video (Hard merge)
 parallel_threads = args.parallel_threads  # Concurrent processing threads
+local_file = args.local_file
 
 
 def audio_to_file(filename, filename_audio):
@@ -83,7 +96,8 @@ def process_video(filename):
     out_file = os.path.splitext(filename)[0]  # Pre-fix of the file
 
     # Download video from gs://in
-    download(bucket_in, filename, filename)
+    if local_file == "NONE":
+        download(bucket_in, filename, filename)
 
     # Get audio track to file
     filename_audio = out_file + ".flac"
@@ -159,7 +173,8 @@ def process_video(filename):
             print(f"ERROR while merge_sub_to_video {out_srt}: ", e)
 
     # Delete all local temp files
-    clean_local(out_file)
+    if local_file == "NONE":
+        clean_local(out_file)
     return
 
 
@@ -243,8 +258,10 @@ def main():
     create_bucket([bucket_tmp, bucket_out], bucket_in)
 
     # List files on bucket and change special character
-    file_list = bucket_file_name(bucket_in)
-
+    if local_file == "NONE":
+        file_list = bucket_file_name(bucket_in)
+    else:
+        file_list = [local_file]
     # Pallaral process
     with futures.ThreadPoolExecutor(max_workers=parallel_threads) as pool:
         for filename in file_list:
