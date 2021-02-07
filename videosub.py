@@ -107,9 +107,9 @@ def process_video(filename):
     sample_rate, channels = get_audio_info(filename_audio)
 
     # Upload audio to gs://tmp
-    # upload(bucket=bucket_tmp,
-    #        localfile=filename_audio,
-    #        bucketfile=f"{out_file}/{filename_audio}")
+    upload(bucket=bucket_tmp,
+           localfile=filename_audio,
+           bucketfile=f"{out_file}/{filename_audio}")
 
     # Speech to text
     storage_uri = f"gs://{bucket_tmp}/{out_file}/{filename_audio}"
