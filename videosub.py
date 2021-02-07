@@ -33,7 +33,7 @@ parser.add_argument("--parallel_threads", type=int, default=1)
 # Processing videos in parallel
 
 parser.add_argument("--local_file", type=str, default="NONE")
-# If set local_file (only one filename without path), it will not list the bucket of the source
+# If set local_file (only one filename in the same path as this code), it will not list the bucket of the source
 # You still need to set a fake bucket name with --bucket para, it is for creating tmp and output bucket
 
 args = parser.parse_args()
@@ -107,9 +107,9 @@ def process_video(filename):
     sample_rate, channels = get_audio_info(filename_audio)
 
     # Upload audio to gs://tmp
-    upload(bucket=bucket_tmp,
-           localfile=filename_audio,
-           bucketfile=f"{out_file}/{filename_audio}")
+    # upload(bucket=bucket_tmp,
+    #        localfile=filename_audio,
+    #        bucketfile=f"{out_file}/{filename_audio}")
 
     # Speech to text
     storage_uri = f"gs://{bucket_tmp}/{out_file}/{filename_audio}"

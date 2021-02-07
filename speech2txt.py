@@ -1,7 +1,7 @@
 import srt
 import time
 import datetime
-from google.cloud import speech
+from google.cloud import speech_v1p1beta1 as speech
 
 
 def long_running_recognize(sample_rate, channels, language_code, storage_uri):
@@ -43,7 +43,8 @@ def long_running_recognize(sample_rate, channels, language_code, storage_uri):
             "sample_rate_hertz": sample_rate,
             "language_code": language_code,
             "encoding": encoding,
-            "audio_channel_count": channels
+            "audio_channel_count": channels,
+            "enable_word_confidence": True
         }
     audio = {"uri": storage_uri}
 
@@ -68,12 +69,29 @@ def long_running_recognize(sample_rate, channels, language_code, storage_uri):
     return subs
 
 
+def choose_words(_w):
+    """
+    Japanese would have hiragana(left) and katakana(right) in the same word for choosing, splitted by "｜"
+    日文包括片假名和平假名，识别结果以｜为划分，左边是平假名，右边是对应的片假名，实际上是同一个意思，
+    需要从结果中选择｜左边或者右边作为最终结果；逗号区分同一个意思的不同片假名表述；空格划分每个词 / 词组。
+    """
+    selected_words = ""
+    _words_list = _w.split(" ")
+    for _word in _words_list:
+        if _word.find("|"):
+            choices = _word.split("|")
+            choose_one = choices[0]
+            selected_words += choose_one
+        else:
+            selected_words += _word+" "
+    return selected_words
+
+
 def break_sentences(subs, alternative, max_chars=40):
     firstword = True
     charcount = 0
     idx = len(subs) + 1
     content = ""
-
     for w in alternative.words:
         if firstword:
             # first word in sentence, record start time
@@ -82,7 +100,10 @@ def break_sentences(subs, alternative, max_chars=40):
             start_ms = int(w.start_time.microseconds / 1000)
             start = start_hhmmss + "," + str(start_ms)
 
-        wd = w.word.replace("|", "")  # delete "|"
+        if w.word.find("|"):
+            wd = w.word.split("|")[0]
+        else:
+            wd = w.word
         charcount += len(wd)
         content += " " + wd.strip()
 
