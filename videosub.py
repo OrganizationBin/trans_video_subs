@@ -223,7 +223,7 @@ def compare_bucket(bucket_in, bucket_out, lang):
     for s in src_bucket:
         prefix = os.path.splitext(s)[0]
         surfix = os.path.splitext(s)[1]
-        full = prefix + "." + lang + surfix
+        full = prefix + "." + lang + ".srt"
         if full not in des_bucket:
             delta_list.append(s)
     if len(delta_list) != 0:

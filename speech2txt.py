@@ -24,28 +24,20 @@ def long_running_recognize(sample_rate, channels, language_code, storage_uri):
     encoding = speech.RecognitionConfig.AudioEncoding.FLAC
     # Supported encoding: https://cloud.google.com/speech-to-text/docs/encoding#audio-encodings
 
+    config = {
+        "enable_word_time_offsets": True,
+        "enable_automatic_punctuation": True,
+        "sample_rate_hertz": sample_rate,
+        "language_code": language_code,
+        "encoding": encoding,
+        "audio_channel_count": channels,
+        # "enable_word_confidence": True
+    }
     # TODO : Video model now only support en-US
     if language_code == 'en-US':
-        config = {
-            "enable_word_time_offsets": True,
-            "enable_automatic_punctuation": True,
-            "sample_rate_hertz": sample_rate,
-            "language_code": language_code,
-            "encoding": encoding,
-            "audio_channel_count": channels,
-            "use_enhanced": True,
-            "model": "video"
-        }
-    else:
-        config = {
-            "enable_word_time_offsets": True,
-            "enable_automatic_punctuation": True,
-            "sample_rate_hertz": sample_rate,
-            "language_code": language_code,
-            "encoding": encoding,
-            "audio_channel_count": channels,
-            "enable_word_confidence": True
-        }
+        config["use_enhanced"] = True
+        config["model"] = "video"
+
     audio = {"uri": storage_uri}
 
     try:
@@ -69,18 +61,25 @@ def long_running_recognize(sample_rate, channels, language_code, storage_uri):
     return subs
 
 
-def break_sentences(subs, alternative, max_chars=40):
+def break_sentences(subs, alternative, max_chars=20, max_time=10):
     firstword = True
     charcount = 0
     idx = len(subs) + 1
     content = ""
+    inter_count = 0
     for w in alternative.words:
+        inter_count += 1
         if firstword:
             # first word in sentence, record start time
-            start_hhmmss = time.strftime('%H:%M:%S', time.gmtime(
-                w.start_time.seconds))
+            start_time = w.start_time.seconds
+            start_hhmmss = time.strftime('%H:%M:%S', time.gmtime(start_time))
             start_ms = int(w.start_time.microseconds / 1000)
             start = start_hhmmss + "," + str(start_ms)
+        end_time = w.end_time.seconds
+        end_hhmmss = time.strftime('%H:%M:%S', time.gmtime(end_time))
+        end_ms = int(w.end_time.microseconds / 1000)
+        end = end_hhmmss + "," + str(end_ms)
+        delta_time = end_time - start_time
 
         if w.word.find("|"):
             wd = w.word.split("|")[0]
@@ -96,13 +95,9 @@ def break_sentences(subs, alternative, max_chars=40):
 
         if ("." in wd or "!" in wd or "?" in wd or
                 charcount > max_chars or
-                ("," in wd and not firstword)):
-            # break sentence at: . ! ? or line length exceeded
-            # also break if , and not first word
-            end_hhmmss = time.strftime('%H:%M:%S', time.gmtime(
-                w.end_time.seconds))
-            end_ms = int(w.end_time.microseconds / 1000)
-            end = end_hhmmss + "," + str(end_ms)
+                ("," in wd and not firstword) or
+                delta_time > max_time):
+            # break sentence at: . ! ? or line length exceeded or max time exceeded
             subs.append(srt.Subtitle(index=idx,
                                      start=srt.srt_timestamp_to_timedelta(start),
                                      end=srt.srt_timestamp_to_timedelta(end),
@@ -113,6 +108,12 @@ def break_sentences(subs, alternative, max_chars=40):
             charcount = 0
         else:
             firstword = False
+            if inter_count == len(alternative.words):
+                # End sentence, but no end sign. 结尾不是结束符的句子，要加入subs
+                subs.append(srt.Subtitle(index=idx,
+                                         start=srt.srt_timestamp_to_timedelta(start),
+                                         end=srt.srt_timestamp_to_timedelta(end),
+                                         content=srt.make_legal_content(content)))
     return subs
 
 
@@ -121,7 +122,6 @@ def write_srt(out_file, language_code, subs):
     print("Writing subtitles to: {}".format(srt_file))
     with open(srt_file, 'w') as f:
         f.writelines(srt.compose(subs))
-
     return
 
 
