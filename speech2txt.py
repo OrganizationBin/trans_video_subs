@@ -61,7 +61,7 @@ def long_running_recognize(sample_rate, channels, language_code, storage_uri):
     return subs
 
 
-def break_sentences(subs, alternative, max_chars=20, max_time=10):
+def break_sentences(subs, alternative, max_chars=30, max_time=10):
     firstword = True
     charcount = 0
     idx = len(subs) + 1
