@@ -108,6 +108,8 @@ ___
     True means automatically hard encode the srt subtitle into Video, as well as output the srt subtitle file. False means only output the srt subtitle file.
     - **--parallel_threads**: Optional, default 1  
     How many video files will be processed in parallel on the VM. 
+    - **--two_step_convert**: Optional, default False   
+    If you want to modify the subtitle before merge into video, you can set this para to "first", after run the app you can change the srt file and then rerun the app with "second"
 
 * Example command:
     ```

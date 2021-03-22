@@ -10,7 +10,7 @@ from translate import batch_translate_text
 from txt2srt import txt2srt
 import argparse
 
-support_format = [".mov", ".mp4", ".mkv", ".avi", ".webm"]
+support_format = [".mov", ".mp4", ".mkv", ".avi", ".webm", ".flac"]
 storage_client = storage.Client()
 
 parser = argparse.ArgumentParser()
@@ -36,6 +36,11 @@ parser.add_argument("--local_file", type=str, default="NONE")
 # If set local_file (only one filename in the same path as this code), it will not list the bucket of the source
 # You still need to set a fake bucket name with --bucket para, it is for creating tmp and output bucket
 
+parser.add_argument("--two_step_convert", type=str, default="False")
+# Two steps Hard-encode the srt subtitle file into video, 
+# "First" is output srt and don't delete the video
+# "Second" is hard-encode video and clean
+
 args = parser.parse_args()
 bucket_in = args.bucket
 bucket_tmp = bucket_in + "-tmp"
@@ -48,6 +53,7 @@ translate_location = args.translate_location  # Traslate API running region
 merge_sub_to_video = args.merge_sub_to_video.lower() == "true"  # Merge subtitle into video (Hard merge)
 parallel_threads = args.parallel_threads  # Concurrent processing threads
 local_file = args.local_file
+two_step_convert = args.two_step_convert
 
 
 def audio_to_file(filename, filename_audio):
@@ -96,67 +102,68 @@ def process_video(filename):
     out_file = os.path.splitext(filename)[0]  # Pre-fix of the file
 
     # Download video from gs://in
-    if local_file == "NONE":
-        download(bucket_in, filename, filename)
+    if two_step_convert.lower() != "second":
+        if local_file == "NONE":
+            download(bucket_in, filename, filename)
 
-    # Get audio track to file
-    filename_audio = out_file + ".flac"
-    audio_to_file(filename, filename_audio)
+        # Get audio track to file
+        filename_audio = out_file + ".flac"
+        audio_to_file(filename, filename_audio)
 
-    # Get audio detail info
-    sample_rate, channels = get_audio_info(filename_audio)
+        # Get audio detail info
+        sample_rate, channels = get_audio_info(filename_audio)
 
-    # Upload audio to gs://tmp
-    upload(bucket=bucket_tmp,
-           localfile=filename_audio,
-           bucketfile=f"{out_file}/{filename_audio}")
+        # Upload audio to gs://tmp
+        upload(bucket=bucket_tmp,
+            localfile=filename_audio,
+            bucketfile=f"{out_file}/{filename_audio}")
 
-    # Speech to text
-    storage_uri = f"gs://{bucket_tmp}/{out_file}/{filename_audio}"
-    speech2txt(
-        sample_rate=sample_rate,
-        channels=channels,
-        language_code=video_src_language_code,
-        storage_uri=storage_uri,
-        out_file=out_file
-    )
+        # Speech to text
+        storage_uri = f"gs://{bucket_tmp}/{out_file}/{filename_audio}"
+        speech2txt(
+            sample_rate=sample_rate,
+            channels=channels,
+            language_code=video_src_language_code,
+            storage_uri=storage_uri,
+            out_file=out_file
+        )
 
-    # Upload txt file to bucket_tmp
-    input_uri = f"gs://{bucket_tmp}/{out_file}/{out_file}.{video_src_language_code}.txt"
-    upload(bucket=bucket_tmp,
-           localfile=f"{out_file}.{video_src_language_code}.txt",
-           bucketfile=f"{out_file}/{out_file}.{video_src_language_code}.txt")
-    upload(bucket=bucket_tmp,
-           localfile=f"{out_file}.{video_src_language_code}.srt",
-           bucketfile=f"{out_file}/{out_file}.{video_src_language_code}.srt")
+        # Upload txt file to bucket_tmp
+        input_uri = f"gs://{bucket_tmp}/{out_file}/{out_file}.{video_src_language_code}.txt"
+        upload(bucket=bucket_tmp,
+            localfile=f"{out_file}.{video_src_language_code}.txt",
+            bucketfile=f"{out_file}/{out_file}.{video_src_language_code}.txt")
+        upload(bucket=bucket_tmp,
+            localfile=f"{out_file}.{video_src_language_code}.srt",
+            bucketfile=f"{out_file}/{out_file}.{video_src_language_code}.srt")
 
-    # Submit translate
-    output_uri_prefix = f"gs://{bucket_tmp}/{out_file}-translated/"
+        # Submit translate
+        output_uri_prefix = f"gs://{bucket_tmp}/{out_file}-translated/"
 
-    clean_bucket(bucket_tmp, out_file + "-translated/")  # If output not empty, then clean them
+        clean_bucket(bucket_tmp, out_file + "-translated/")  # If output not empty, then clean them
 
-    batch_translate_text(
-        input_uri, output_uri_prefix, project_id, translate_location, translate_src_code, translate_des_code
-    )
+        batch_translate_text(
+            input_uri, output_uri_prefix, project_id, translate_location, translate_src_code, translate_des_code
+        )
 
-    # get translate txt and compose into srt
-    translated_txt = f"{out_file}-translated/{bucket_tmp}_{out_file}_{out_file}.{video_src_language_code}_{translate_des_code}_translations.txt"
-    download(bucket=bucket_tmp,
-             localfile=f"{out_file}.{translate_des_code}.txt",
-             bucketfile=translated_txt)
+        # get translate txt and compose into srt
+        translated_txt = f"{out_file}-translated/{bucket_tmp}_{out_file}_{out_file}.{video_src_language_code}_{translate_des_code}_translations.txt"
+        download(bucket=bucket_tmp,
+                localfile=f"{out_file}.{translate_des_code}.txt",
+                bucketfile=translated_txt)
 
-    txt2srt(
-        orgfile=f"{out_file}.{video_src_language_code}.srt",
-        langfile=f"{out_file}.{translate_des_code}.txt",
-        lang=translate_des_code,
-        out_file=out_file
-    )
+        txt2srt(
+            orgfile=f"{out_file}.{video_src_language_code}.srt",
+            langfile=f"{out_file}.{translate_des_code}.txt",
+            lang=translate_des_code,
+            out_file=out_file
+        )
 
-    # upload srt to gs://output
-    out_srt = f"{out_file}.{translate_des_code}.srt"
-    upload(bucket_out, out_srt, out_srt)
+        # upload srt to gs://output
+        out_srt = f"{out_file}.{translate_des_code}.srt"
+        upload(bucket_out, out_srt, out_srt)
 
-    if merge_sub_to_video:
+    if merge_sub_to_video and two_step_convert.lower() != "first":
         try:
             out_video = f"{out_file}.{translate_des_code}{os.path.splitext(filename)[1]}"
             # ffmpeg convert video to video with hard-subtitles
@@ -173,8 +180,8 @@ def process_video(filename):
             print(f"ERROR while merge_sub_to_video {out_srt}: ", e)
 
     # Delete all local temp files
-    if local_file == "NONE":
-        clean_local(out_file)
+    if two_step_convert.lower() != "first" and local_file == "NONE":
+            clean_local(out_file)
     return
 
 
