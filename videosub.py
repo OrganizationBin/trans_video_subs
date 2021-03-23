@@ -245,7 +245,7 @@ def bucket_file_name(bucket):
     b = storage_client.bucket(bucket)
 
     file_list = []
-    rstr = r"[\/\\\:\*\?\"\<\>\|\[\]\'\ \@]"  # '/ \ : * ? " < > | [ ] ' @ '
+    rstr = r"[\/\\\:\*\?\"\<\>\|\[\]\'\ \@\’\,]"  # '/ \ : * ? " < > | [ ] ' @ '
     for f in list:
         filename = f.name
         # Change filename if match special character
