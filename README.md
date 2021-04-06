@@ -133,3 +133,5 @@ ___
 ## Remark
 * This Trans_video_subs project is programed by James Huang. Reference to the [Google Cloud Tutorial](https://cloud.google.com/community/tutorials/speech2srt). The Tutorial needs 20+ manual steps to process one video and without merger subs into video. Trans_video_subs make all steps auto including merging video and processing files in parallel.  
 本项目参考了[Google Cloud Tutorial](https://cloud.google.com/community/tutorials/speech2srt)，原教程需要20多个手工步骤才能输出一个视频字幕，而且没有从视频提取音频，最终字幕加入视频的操作也没有。本项目把以上所有工作全自动化，也包括视频处理，并且是并行多文件处理。
+
+* 对于日文Speech-to-Text的时候，会以｜分割同时给出平假名（左）和片假名（右），当前代码的处理是只取了左边的平假名来提交翻译。
