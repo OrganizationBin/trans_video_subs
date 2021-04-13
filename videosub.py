@@ -168,7 +168,7 @@ def process_video(filename):
             out_video = f"{out_file}.{translate_des_code}{os.path.splitext(filename)[1]}"
             # ffmpeg convert video to video with hard-subtitles
             ff = FFmpeg(inputs={filename: None},
-                        outputs={out_video: f"-y -vf 'subtitles={out_file}.{translate_des_code}.srt'"}
+                        outputs={out_video: f"-y -vf 'subtitles={out_file}.{translate_des_code}.srt':force_style='Fontsize=24'"}
                         )
             print(ff.cmd)
             ff.run()
