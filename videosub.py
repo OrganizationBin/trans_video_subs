@@ -29,7 +29,7 @@ parser.add_argument("--translate_location", type=str, default="us-central1")
 parser.add_argument("--merge_sub_to_video", type=str, default="True")
 # Hard-encode the srt subtitle file into video
 
-parser.add_argument("--parallel_threads", type=int, default=1)
+parser.add_argument("--parallel_threads", type=int, default=8)
 # Processing videos in parallel
 
 parser.add_argument("--local_file", type=str, default="NONE")
