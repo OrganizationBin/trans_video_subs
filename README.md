@@ -1,5 +1,8 @@
-# Auto Translate and add subtitle to video on Google Cloud  
+# Auto Translate and add captions to video on Google Cloud  
 # 利用谷歌云为视频添加翻译字幕
+
+Below is description of simple application running on a server. For long term running, highly recommaned to the Serverless version, please refer to [this link](./Serverless/README.md)  
+以下是在服务器上运行的简单应用的版本，如果要长期部署，强烈建议使用无服务器版本，请访问[this link](./Serverless/README.md)  
 
 ## Summary
 This tool generates translated subtitles for video with ONE COMMAND, and optional hard encoding subtitles into video.  
@@ -17,12 +20,19 @@ This tool generates translated subtitles for video with ONE COMMAND, and optiona
 * The best feature is that the processing is in BATCH and in PARALLEL.  
 最棒的是，支持批量并行处理
 
-## Quick Guide
+## Quick Guide on Windows VM with GUI
+1. Create a Bucket, e.g. my-video-bucket.  
+Upload some video files to GCS(Google Cloud Storage) Bucket, e.g. mp4, avi and etc.
+
+2. Download [zip package for Windows](./win64/videosub.zip), unzip and run videosub.exe  
+![gui](./img/gui.gif)
+
+## Quick Guide on Linux VM without GUI
 1. Create a Bucket, e.g. my-video-bucket.  
 Upload some video files to GCS(Google Cloud Storage) Bucket, e.g. mp4, avi and etc.
 2. Create VM at the same region as GCS Bucket. Set Cloud API Access Scope for all API.  
 Use the default compute service account for the VM as project Editor permission.
-3. Run these on the VM you created:
+3. Run these on the VM that you created:
     ```
     sudo apt update -y
     sudo apt install git python3-pip ffmpeg fonts-wqy-zenhei -y
@@ -110,6 +120,7 @@ ___
     How many video files will be processed in parallel on the VM. 
     - **--two_step_convert**: Optional, default False   
     If you want to modify the subtitle before merge into video, you can set this para to "first", after run the app you can change the srt file and then rerun the app with "second"
+    - **--gui**: Optional, Enable GUI  
 
 * Example command:
     ```

@@ -1,6 +1,8 @@
-google-cloud
-google-cloud-speech>=1.2.0
-google-cloud-translate>=2.0.0
-srt>=3.0.0
-google-cloud-storage>=1.33.0
-ffmpy
+google-cloud>=0.34.0
+google-cloud-speech>=2.8.0
+google-cloud-translate>=3.4.0
+srt>=3.4.1
+google-cloud-storage>=1.42.0
+ffmpy>=0.3.0
+Flask>=2.0.1
+gunicorn>=20.1.0

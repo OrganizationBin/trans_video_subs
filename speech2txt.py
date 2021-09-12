@@ -1,3 +1,4 @@
+from google.cloud.storage import retry
 import srt
 import time
 import datetime
@@ -48,16 +49,19 @@ def long_running_recognize(sample_rate, channels, language_code, storage_uri):
             }
         )
         response = operation.result(timeout=3600)
-
+        spent_time = str(datetime.datetime.now() - start_time)
+        print(f"Transcrbed with Time {spent_time}, {storage_uri}")
+        
         subs = []
 
-        for result in response.results:
-            # First alternative is the most probable result
-            subs = break_sentences(subs, result.alternatives[0])
+        if "results" in response:
+            for result in response.results:
+                # First alternative is the most probable result
+                subs = break_sentences(subs, result.alternatives[0])
+        print("Finished break_sentences")
     except Exception as e:
         print(f"ERROR while transcribing {storage_uri}: ", e)
-    spent_time = str(datetime.datetime.now() - start_time)
-    print(f"Transcrbed with Time {spent_time}, {storage_uri}")
+        return "ERR"
     return subs
 
 
@@ -120,7 +124,7 @@ def break_sentences(subs, alternative, max_chars=30, max_time=10):
 def write_srt(out_file, language_code, subs):
     srt_file = f"{out_file}.{language_code}.srt"
     print("Writing subtitles to: {}".format(srt_file))
-    with open(srt_file, 'w') as f:
+    with open(srt_file, 'w', encoding="utf8") as f:
         f.writelines(srt.compose(subs))
     return
 
@@ -128,7 +132,7 @@ def write_srt(out_file, language_code, subs):
 def write_txt(out_file, language_code, subs):
     txt_file = f"{out_file}.{language_code}.txt"
     print("Writing text to: {}".format(txt_file))
-    with open(txt_file, 'w') as f:
+    with open(txt_file, 'w', encoding="utf8") as f:
         for s in subs:
             f.write(s.content.strip() + "\n")
     return
@@ -136,6 +140,8 @@ def write_txt(out_file, language_code, subs):
 
 def speech2txt(sample_rate, channels, language_code, storage_uri, out_file):
     subs = long_running_recognize(sample_rate, channels, language_code, storage_uri)
+    if subs == "ERR":
+        return "ERR"
     write_srt(out_file, language_code, subs)
     write_txt(out_file, language_code, subs)
     return

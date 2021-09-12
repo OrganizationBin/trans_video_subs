@@ -38,9 +38,10 @@ def batch_translate_text(
         )
 
         response = operation.result(timeout=3600)
+        spent_time = str(datetime.datetime.now() - start_time)
+        print(f"Translated Time: {spent_time}", input_uri, "Total Characters: {}".format(response.total_characters), u"Translated: {}".format(response.translated_characters))
     except Exception as e:
         print(f"ERROR while translating {input_uri}: ", e)
-    spent_time = str(datetime.datetime.now() - start_time)
-    print(f"Translated Time: {spent_time}", input_uri, "Total Characters: {}".format(response.total_characters), u"Translated: {}".format(response.translated_characters))
+        return "ERR"
     return
 
