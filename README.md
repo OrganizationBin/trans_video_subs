@@ -138,8 +138,6 @@ ___
 
 ## TODO:
 * Sub-folder in GCS
-* Distributed VMs to run the processing 
-* Don't change the source bucket filename of special character, only change the target filename
 
 ## Remark
 * This Trans_video_subs project is programed by James Huang. Reference to the [Google Cloud Tutorial](https://cloud.google.com/community/tutorials/speech2srt). The Tutorial needs 20+ manual steps to process one video and without merger subs into video. Trans_video_subs make all steps auto including merging video and processing files in parallel.  
