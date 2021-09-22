@@ -1,7 +1,7 @@
 # Auto Translate and add caption to video on Google Cloud  
 # 利用谷歌云为视频添加翻译字幕
 ## For Serverless version
-For long term running, highly recommaned to the Serverless version, please refer to [this link](./Serverless/README.md)  
+For long term running, strongly recommended to the Serverless version, please refer to [this link](./Serverless/README.md)  
 如果要长期部署，强烈建议使用无服务器版本，请访问[this link](./Serverless/README.md)  
 
 ## For running on a Virtual Machine Server (GCE)
