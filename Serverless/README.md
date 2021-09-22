@@ -1,18 +1,18 @@
-# Auto Translate and add captions to video on Google Cloud (Serverless) 
+# Auto Translate and add caption to video on Google Cloud (Serverless) 
 # 利用谷歌云为视频添加翻译字幕(无服务器)
 
 ## Summary
-This tool generates translated subtitles for your uploaded video with only once deploy, and optional hard encoding subtitles into video.  
+This tool generates translated caption for your uploaded video with only once deploy, and optional hard encoding caption into video.  
 此应用只需部署一次，就可随时为你上传的视频生成你指定翻译语言的字幕文件，并可选自动硬编码入视频  
 * Auto extract audio track from Video, auto detect the sample rate and channels count.  
 从视频自动提取音轨，自动检测音频采样率和声道数量  
-* Transcribe audio into text subtitles with Google Cloud Speech-to-Text API Service, and add subtitle time stamp.  
+* Transcribe audio into text caption with Google Cloud Speech-to-Text API Service, and add caption time stamp.  
 利用谷歌云 Speech-to-Text API将音频转译成文本，并加入字幕时间戳  
 * Translate source text into target language with Google Cloud Translation API Service.  
 利用谷歌云 Translation API将文本翻译为指定语言  
-* Transform text back to subtitle file format.  
+* Transform text back to caption file format.  
 转换文本为字幕格式  
-* Hard merging subtitle into video. This step is optional to choose.  
+* Hard merging caption into video. This step is optional to choose.  
 把字幕硬编码进视频中   
 * This solution is base on Serverless - Google Cloud Run, no need to worry about setting up, scale or cost of server  
 无服务器方案，使用 Google Cloud Run，免去设置服务器和扩展的麻烦  
@@ -24,7 +24,7 @@ Cloud Run 每个月前50分钟免费，运行5分钟 ~$0.007575
 ## Guide
 ### You can do below command in Cloud Shell or your own PC with gcloud command
 0. Pre-request:
-You need to enable Speech API, Cloud Run API, Translate API, Pubsub API, Eventarc API, if you haven't done it yet.
+You need to enable Speech API, Cloud Run API, Translate API, Pubsub API, Eventarc API, if you haven't done it yet.  
 ```
 gcloud services enable \
     speech.googleapis.com \
@@ -55,7 +55,7 @@ This command will auto build a container and deploy to Cloud Run. Remember to re
 Here are the environment variables descriptions:  
     - **video_src_language**: Video language code. Refer to [Speech-to-Text API language code document](https://cloud.google.com/speech-to-text/docs/languages)  
     - **translate_src_language/translate_des_language**: Translate from translate_src_language to translate_des_language. Refer to [Translate API language code document](https://cloud.google.com/translate/docs/languages)    
-    - **merge_sub_to_video**:  True means automatically hard encode the srt subtitle into Video, as well as output the srt subtitle file. False means only output the srt subtitle file.  
+    - **merge_sub_to_video**:  True means automatically hard encode the srt caption into Video, as well as output the srt caption file. False means only output the srt caption file.  
 
 
 2. Create a GCS Bucket for upload videos, please choose a single region bucket.  
@@ -82,7 +82,11 @@ gcloud eventarc triggers create <TRIGGER-NAME> \
 Recommand to create a Dead Letter Topic and deliver the dead letter after max retries.  
 ![pubsub](./img/pubsub.png)  
 
-Which you are debugging, if there is some retry message you want to delete, you can purge message in this Console.  
+When you are debugging, if there is some retry message you want to delete, you can purge message in this Console.  
+
+5. Upload video to Cloud Storage, the bucket gs://MY-BUCKET-NAME you just created.  
+After some minutes, you can download the srt caption file from the ouput bucket gs://MY-BUCKET-NAME-out.  
+Or if you set the merge_sub_to_video to True in Cloud Run environment variable, the you can download the video mp4 with encoded caption.  
 
 ## Notice: 
 * This Serverless solution can handle short videos elastically. Cloud Run can run up to 60 mins. But if your video processing is longer than 10 mins, then Pub/sub will be timeout for Acknowledgement deadline. So you need to decouple multiple steps of this one Cloud Run service into multiple Cloud Run services and don't wait for API response in your Cloud Run's code. This make this architecture decouple as well as save cost. Like this:   

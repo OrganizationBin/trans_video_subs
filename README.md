@@ -1,21 +1,24 @@
-# Auto Translate and add captions to video on Google Cloud  
+# Auto Translate and add caption to video on Google Cloud  
 # 利用谷歌云为视频添加翻译字幕
+## For Serverless version
+For long term running, highly recommaned to the Serverless version, please refer to [this link](./Serverless/README.md)  
+如果要长期部署，强烈建议使用无服务器版本，请访问[this link](./Serverless/README.md)  
 
-Below is description of simple application running on a server. For long term running, highly recommaned to the Serverless version, please refer to [this link](./Serverless/README.md)  
-以下是在服务器上运行的简单应用的版本，如果要长期部署，强烈建议使用无服务器版本，请访问[this link](./Serverless/README.md)  
-
-## Summary
-This tool generates translated subtitles for video with ONE COMMAND, and optional hard encoding subtitles into video.  
+## For running on a Virtual Machine Server (GCE)
+Below is the description of simple application running on a server.  
+以下是在服务器上手工运行的版本  
+  
+This tool generates translated caption for video with ONE COMMAND, and optional hard encoding caption into video.  
 此工具只需一个命令，就可为视频生成你指定翻译语言的字幕文件，并可选自动硬编码入视频  
 * Auto extract audio track from Video, auto detect the sample rate and channels count.  
 从视频自动提取音轨，自动检测音频采样率和声道数量  
-* Transcribe audio into text subtitles with Google Cloud Speech-to-Text API Service, and add subtitle time stamp.  
+* Transcribe audio into text caption with Google Cloud Speech-to-Text API Service, and add caption time stamp.  
 利用谷歌云Speech-to-Text API将音频转译成文本，并加入字幕时间戳  
 * Translate source text into target language with Google Cloud Translation API Service.  
 利用谷歌云Translation API将文本翻译为指定语言  
-* Transform text back to subtitle file format.  
+* Transform text back to caption file format.  
 转换文本为字幕格式  
-* Hard merging subtitle into video. This step is optional to choose.  
+* Hard merging caption into video. This step is optional to choose.  
 把字幕硬编码进视频中   
 * The best feature is that the processing is in BATCH and in PARALLEL.  
 最棒的是，支持批量并行处理
@@ -49,14 +52,14 @@ Use the default compute service account for the VM as project Editor permission.
         --merge_sub_to_video True \
         --parallel_threads 3
     ```
-5. Translated subtitles and output video files will be in the GCS Bucket: my-video-bucket-out
+5. Translated caption and output video files will be in the GCS Bucket: my-video-bucket-out
 
 ## Detail Guide
 1. Upload video files to GCS(Google Cloud Storage)  
 上传视频到对象存储 
 * All video files should be upload to GCS Bucket without sub-folder. The tool doesn't support sub-folder yet, and will be added in coming release.  
 所有视频文件上传到GCS存储分区，并且没有子目录。本工具暂时不支持子目录，会在后续版本提供。  
-* In case of filename with special character, the tool will change filename to underline _ in your source input bucket and then start processing subtitles. Special character including: / \ : * ? " < > | [] ' @  
+* In case of filename with special character, the tool will change filename to underline _ in your source input bucket and then start processing caption. Special character including: / \ : * ? " < > | [] ' @  
 对于文件名有特殊字符的，本工具会自动把GCS上的原文件改名后再开始后续处理，特殊字符修改为下划线 _。特殊字符包括 / \ : * ? " < > | [] ' @
 ___
 2. Prepare tool execution environment  
@@ -115,11 +118,11 @@ ___
     - **--translate_location**: Optional, default us-central1.   
     Where to run the Translation API. "global" is not supported for batch translate. Recommand to select the same region as the VM you created.
     - **--merge_sub_to_video**: Optional, default True   
-    True means automatically hard encode the srt subtitle into Video, as well as output the srt subtitle file. False means only output the srt subtitle file.
+    True means automatically hard encode the srt caption into Video, as well as output the srt caption file. False means only output the srt caption file.
     - **--parallel_threads**: Optional, default 1  
     How many video files will be processed in parallel on the VM. 
     - **--two_step_convert**: Optional, default False   
-    If you want to modify the subtitle before merge into video, you can set this para to "first", after run the app you can change the srt file and then rerun the app with "second"
+    If you want to modify the caption before merge into video, you can set this para to "first", after run the app you can change the srt file and then rerun the app with "second"
     - **--gui**: Optional, Enable GUI  
 
 * Example command:
@@ -133,7 +136,7 @@ ___
     ```
 ___
 4. Get result 查看结果
-* The output subtitle and video files will be in the output GCS bucket, which name as [YOUR_ORIGINAL_BUCKET]-out. For example, your original video upload to bucket named "myvideo", then the ouput files will be in "myvideo-out". There is a temporay bucket name "-tmp", you can delete it.  
+* The output caption and video files will be in the output GCS bucket, which name as [YOUR_ORIGINAL_BUCKET]-out. For example, your original video upload to bucket named "myvideo", then the ouput files will be in "myvideo-out". There is a temporay bucket name "-tmp", you can delete it.  
 字幕和视频文件输出到了GCS，Bucket 名称为你原来Bucket名称后面加-out。还有一个-tmp的临时Bucket，你可以自行删除。
 
 ## TODO:
